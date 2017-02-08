@@ -5,7 +5,9 @@ import android.util.Log;
 import com.lucek.androidgameengine2d.game.Field;
 import com.lucek.androidgameengine2d.gameplay.Game;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Created by Artur Kosma & Michal Marzec on 07.02.2017.
@@ -25,17 +27,19 @@ public class AI_KosmaMarzec extends AbstractPlayerController
         // Get copy of the map.
         Field[][] mapCopy = GetBoardState();
 
-        // Container for the enemy colour.
-        Field enemyColour;
+        // Container for the colours.
+        Field enemyColour, ourColour;
 
         // Get enemy colour.
         if(GetColour() == Field.WHITE)
         {
             enemyColour = Field.BLACK;
+            ourColour = Field.WHITE;
         }
         else
         {
             enemyColour = Field.WHITE;
+            ourColour = Field.BLACK;
         }
 
         // Array of possible points.
@@ -69,7 +73,7 @@ public class AI_KosmaMarzec extends AbstractPlayerController
             for(int x = 0; x < possiblePoints.size(); x++)
             {
                 // Add value of simulation at specific point to an array of values.
-                moveValues[x] += Simulate(possiblePoints.get(x), enemyColour, mapCopy);
+                moveValues[x] += Simulate(possiblePoints.get(x), enemyColour, ourColour, mapCopy);
 
                 // Update the value buffer and the best point container.
                 if(moveValues[x] > bestValue)
@@ -85,8 +89,17 @@ public class AI_KosmaMarzec extends AbstractPlayerController
     }
 
     // Simulates the game at specific point.
-    private int Simulate(Point point, Field enemyColour, Field[][] mapCopy)
+    private int Simulate(Point point, Field enemyColour, Field ourColour, Field[][] mapCopy)
     {
+        // Boolean deciding who's having the move in simulation.
+        boolean enemy = true;
+
+        // Create the random generator object.
+        Random randomIndex = new Random();
+
+        // Container for a proper index from the possible moves lists.
+        int properIndex;
+
         // Create a new map for simulation.
         Field[][] mapSimulation = new Field[mapCopy.length][mapCopy[0].length];
 
@@ -99,48 +112,102 @@ public class AI_KosmaMarzec extends AbstractPlayerController
             }
         }
 
-        Log.d("Simulation", "-----S I M U L A T I O N  S T A R T S-----");
-
         // Put a pin on a possible point.
         mapSimulation[point.x][point.y] = GetColour();
 
         // Creates our own game instance for simulation.
-        Game gameSimulation = new Game(new RandomMoveAI(100), enemyColour, new RandomMoveAI(100), GetColour(), mapSimulation);
+        Game gameSimulation = new Game(new RandomMoveAI(0), enemyColour, new RandomMoveAI(0), ourColour, mapSimulation);
+
+        // Create linked lists of possible points for both players in simulation.
+        List<Point> enemyPossibleMoves = new LinkedList<>();
+        List<Point> ourPossibleMoves = new LinkedList<>();
+
+        // Fill lists of possible first moves for this simulation.
+        for(int x = 0; x < mapSimulation.length; x++)
+        {
+            for(int y = 0; y < mapSimulation[0].length; y++)
+            {
+                if(gameSimulation.IsMoveValid(new Point(x, y), enemyColour))
+                {
+                    enemyPossibleMoves.add(new Point(x, y));
+                }
+
+                if(gameSimulation.IsMoveValid(new Point(x, y), ourColour))
+                {
+                    ourPossibleMoves.add(new Point(x, y));
+                    ourPossibleMoves.size();
+                }
+            }
+        }
 
         // Until simulation is over.
         while(true)
         {
-            PrintCurrentMapStateToConsole(gameSimulation);
-            try
+            // Enemy move.
+            if(enemy)
             {
-                gameSimulation.Update();
-                Log.d("Game State", "-----U P D A T E-----");
-            }
-            catch(Game.GameIsOverException gameOverException)
-            {
-                if(gameOverException.winner == GetColour())
+                // Search for a proper index if found unproper index or proper index is out of range of the enemy list.
+                do
                 {
-                    Log.d("Game State", "-----W I N N E R-----");
-                    return 1;
+                    properIndex = randomIndex.nextInt(enemyPossibleMoves.size());
+
+                    // Delete unproper index.
+                    if (!gameSimulation.IsMoveValid(new Point(enemyPossibleMoves.get(properIndex)), enemyColour)) {
+                        enemyPossibleMoves.remove(properIndex);
+                    }
                 }
-                else
-                {
-                    Log.d("Game State", "-----L O S E R-----");
-                    return 0;
-                }
+                while(!(gameSimulation.IsMoveValid(new Point(enemyPossibleMoves.get(properIndex)), enemyColour)));
+
+                PrintCurrentMapStateToConsole(gameSimulation);
+                Log.d("Simulation", "Enemy makes a move at: " + new Point(enemyPossibleMoves.get(properIndex)));
+                // Put a pin on that location.
+                mapSimulation[enemyPossibleMoves.get(properIndex).x][enemyPossibleMoves.get(properIndex).y] = enemyColour;
             }
-            catch(Game.InvalidMoveException invalidMoveException)
+
+            // Our move.
+            else
             {
-                // Never used.
+                // Search for a proper index if found unproper index or proper index is out of range of the enemy list.
+                do
+                {
+                    properIndex = randomIndex.nextInt(ourPossibleMoves.size());
+
+                    // Delete unproper index.
+                    if(!gameSimulation.IsMoveValid(new Point(ourPossibleMoves.get(properIndex)), ourColour))
+                    {
+                        ourPossibleMoves.remove(properIndex);
+                    }
+                }
+                while(!(gameSimulation.IsMoveValid(new Point(ourPossibleMoves.get(properIndex)), ourColour)));
+
+                PrintCurrentMapStateToConsole(gameSimulation);
+                Log.d("Simulation", "We make a move at: " + new Point(enemyPossibleMoves.get(properIndex)));
+                // Put a pin on that location.
+                mapSimulation[ourPossibleMoves.get(properIndex).x][ourPossibleMoves.get(properIndex).y] = ourColour;
+            }
+
+            // Switch player.
+            enemy = !enemy;
+
+            // Simulation end.
+            if(enemyPossibleMoves.size() == 0)
+            {
+                return 1;
+            }
+
+            else if (ourPossibleMoves.size() == 0)
+            {
+                return 0;
             }
         }
     }
 
     // Prints the current map state to the console.
+    // DEBUG ONLY.
     private void PrintCurrentMapStateToConsole(Game simulatedGame)
     {
         String row = "";
-        int rowNumber = 1;
+        int rowNumber = 0;
 
         // Fills the row string.
         for(int i = 0; i < simulatedGame.GetBoardState().length; i++)
