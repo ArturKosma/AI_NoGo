@@ -85,8 +85,11 @@ public class AI_KosmaMarzec extends AbstractPlayerController
     }
 
     // Simulates the game at specific point.
-    private int Simulate(Point point, Field enemyColour, Field[][] mapSimulation)
+    private int Simulate(Point point, Field enemyColour, Field[][] mapCopy)
     {
+        // Create a new map for simulation.
+        Field[][] mapSimulation = mapCopy;
+
         // Put a pin on a possible point.
         mapSimulation[point.x][point.y] = GetColour();
 
@@ -96,18 +99,22 @@ public class AI_KosmaMarzec extends AbstractPlayerController
         // Until simulation is over.
         while(true)
         {
+            PrintCurrentMapStateToConsole(gameSimulation);
             try
             {
                 gameSimulation.Update();
+                Log.d("Game State", "-----U P D A T E-----");
             }
             catch(Game.GameIsOverException gameOverException)
             {
                 if(gameOverException.winner == GetColour())
                 {
+                    Log.d("Game State", "-----W I N N E R-----");
                     return 1;
                 }
                 else
                 {
+                    Log.d("Game State", "-----L O S E R-----");
                     return 0;
                 }
             }
@@ -115,6 +122,40 @@ public class AI_KosmaMarzec extends AbstractPlayerController
             {
                 // Never used.
             }
+        }
+    }
+
+    // Prints the current map state to the console.
+    private void PrintCurrentMapStateToConsole(Game simulatedGame)
+    {
+        String row = "";
+        int rowNumber = 1;
+
+        // Fills the row string.
+        for(int i = 0; i < simulatedGame.GetBoardState().length; i++)
+        {
+            for(int n = 0; n < simulatedGame.GetBoardState()[0].length; n++)
+            {
+                if(simulatedGame.GetBoardState()[i][n] == Field.WHITE)
+                {
+                    row += 'W';
+                }
+
+                else if(simulatedGame.GetBoardState()[i][n] == Field.BLACK)
+                {
+                    row += 'B';
+                }
+
+                else
+                {
+                    row += 'X';
+                }
+            }
+
+            // Debug and clear.
+            Log.d("Row number: " + rowNumber, row);
+            row = "";
+            rowNumber++;
         }
     }
 }
