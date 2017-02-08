@@ -69,11 +69,13 @@ public class AI_KosmaMarzec extends AbstractPlayerController
         // While we still have time left.
         while(GetRemainingTimeMS() >= 0)
         {
+            Log.d("Simulation", "S T A R T");
             // Iterate through all possible points.
             for(int x = 0; x < possiblePoints.size(); x++)
             {
                 // Add value of simulation at specific point to an array of values.
                 moveValues[x] += Simulate(possiblePoints.get(x), enemyColour, ourColour, mapCopy);
+                Log.d("Simulation", "F I N I S H E D");
 
                 // Update the value buffer and the best point container.
                 if(moveValues[x] > bestValue)
@@ -146,20 +148,30 @@ public class AI_KosmaMarzec extends AbstractPlayerController
             // Enemy move.
             if(enemy)
             {
-                // Search for a proper index if found unproper index or proper index is out of range of the enemy list.
-                do
+                // Search for a proper index.
+                while(true)
                 {
+                    // Generate random index.
                     properIndex = randomIndex.nextInt(enemyPossibleMoves.size());
 
                     // Delete unproper index.
-                    if (!gameSimulation.IsMoveValid(new Point(enemyPossibleMoves.get(properIndex)), enemyColour)) {
+                    if (!gameSimulation.IsMoveValid(new Point(enemyPossibleMoves.get(properIndex)), enemyColour))
+                    {
                         enemyPossibleMoves.remove(properIndex);
+
+                        // Enemy lose.
+                        if (enemyPossibleMoves.size() == 0)
+                        {
+                            return 1;
+                        }
+                    }
+
+                    else
+                    {
+                        break;
                     }
                 }
-                while(!(gameSimulation.IsMoveValid(new Point(enemyPossibleMoves.get(properIndex)), enemyColour)));
 
-                PrintCurrentMapStateToConsole(gameSimulation);
-                Log.d("Simulation", "Enemy makes a move at: " + new Point(enemyPossibleMoves.get(properIndex)));
                 // Put a pin on that location.
                 mapSimulation[enemyPossibleMoves.get(properIndex).x][enemyPossibleMoves.get(properIndex).y] = enemyColour;
             }
@@ -167,38 +179,36 @@ public class AI_KosmaMarzec extends AbstractPlayerController
             // Our move.
             else
             {
-                // Search for a proper index if found unproper index or proper index is out of range of the enemy list.
-                do
+                // Search for a proper index.
+                while(true)
                 {
+                    // Generate random index.
                     properIndex = randomIndex.nextInt(ourPossibleMoves.size());
 
                     // Delete unproper index.
-                    if(!gameSimulation.IsMoveValid(new Point(ourPossibleMoves.get(properIndex)), ourColour))
+                    if (!gameSimulation.IsMoveValid(new Point(ourPossibleMoves.get(properIndex)), ourColour))
                     {
                         ourPossibleMoves.remove(properIndex);
+
+                        // We lose.
+                        if (ourPossibleMoves.size() == 0)
+                        {
+                            return 0;
+                        }
+                    }
+
+                    else
+                    {
+                        break;
                     }
                 }
-                while(!(gameSimulation.IsMoveValid(new Point(ourPossibleMoves.get(properIndex)), ourColour)));
 
-                PrintCurrentMapStateToConsole(gameSimulation);
-                Log.d("Simulation", "We make a move at: " + new Point(enemyPossibleMoves.get(properIndex)));
                 // Put a pin on that location.
                 mapSimulation[ourPossibleMoves.get(properIndex).x][ourPossibleMoves.get(properIndex).y] = ourColour;
             }
 
             // Switch player.
             enemy = !enemy;
-
-            // Simulation end.
-            if(enemyPossibleMoves.size() == 0)
-            {
-                return 1;
-            }
-
-            else if (ourPossibleMoves.size() == 0)
-            {
-                return 0;
-            }
         }
     }
 
