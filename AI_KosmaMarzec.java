@@ -88,13 +88,24 @@ public class AI_KosmaMarzec extends AbstractPlayerController
     private int Simulate(Point point, Field enemyColour, Field[][] mapCopy)
     {
         // Create a new map for simulation.
-        Field[][] mapSimulation = mapCopy;
+        Field[][] mapSimulation = new Field[mapCopy.length][mapCopy[0].length];
+
+        // Fill new map for simulation.
+        for(int i = 0; i < mapSimulation.length; i++)
+        {
+            for(int n = 0; n < mapSimulation[0].length; n++)
+            {
+                mapSimulation[i][n] = mapCopy[i][n];
+            }
+        }
+
+        Log.d("Simulation", "-----S I M U L A T I O N  S T A R T S-----");
 
         // Put a pin on a possible point.
         mapSimulation[point.x][point.y] = GetColour();
 
         // Creates our own game instance for simulation.
-        Game gameSimulation = new Game(new RandomMoveAI(10000), enemyColour, new RandomMoveAI(10000), GetColour(), mapSimulation);
+        Game gameSimulation = new Game(new RandomMoveAI(100), enemyColour, new RandomMoveAI(100), GetColour(), mapSimulation);
 
         // Until simulation is over.
         while(true)
