@@ -105,23 +105,23 @@ public class AI_KosmaMarzec extends AbstractPlayerController
         } */
 
         // Best value buffer.
-        int bestValue = 0; // Default value.
+        float bestValue = 0; // Default value.
 
         if(emptyPoints.size() > 30) //valuation
-        CutPossibleMoves(2);
+        CutPossibleMoves((int)(1.9f + (6 - 6 * (float)emptyPoints.size() / 81)));
 
-        Log.d("Time Left", GetRemainingTimeMS() + "");
+        //Log.d("Time Left", GetRemainingTimeMS() + "");
 
 
-        int cutDeferenceValue = 6;
+        //int cutDeferenceValue = 6;
         int possibleSize = possiblePoints.size();
 
         Point currentMove = new Point(0,0);
 
         // While we still have time left.
-        while(GetRemainingTimeMS() >= 0)
+        do
         {
-            Log.d("Simulation", "S T A R T");
+            //Log.d("Simulation", "S T A R T");
 
             // Iterate through all possible points.
             for(int x = 0; x < possibleSize; x++)
@@ -131,57 +131,78 @@ public class AI_KosmaMarzec extends AbstractPlayerController
                 // Add value of simulation at specific point to an array of values.
                 UpdateMoveValue(currentMove, Simulate(currentMove, enemyColour, ourColour, mapCopy));
 
-                //Log.d("Simulation", "move value: " + moveValues.get(x));
+                //Log.d("move value: ", "" + moveValues[currentMove.x][currentMove.y]/(float)simulationsCounts[currentMove.x][currentMove.y]);
+                //Log.d("simulations count: ", "" + simulationsCounts[currentMove.x][currentMove.y]);
+
+                float currentMoveValue = moveValues[currentMove.x][currentMove.y]/(float)simulationsCounts[currentMove.x][currentMove.y];
 
                 // Update the value buffer and the best point container.
-                if(moveValues[currentMove.x][currentMove.y] > bestValue)
+                if(currentMoveValue > bestValue)
                 {
-                    bestValue = moveValues[currentMove.x][currentMove.y];
+                    bestValue = currentMoveValue;
                     bestMove = possiblePoints.get(x);
                 }
             }
 
             //Extra cutting nie dziala odpowiednio po zmianie wartosci na usrednione wiec wypieprzamy narazie
-            /*for (int i = 0; i < possiblePoints.size(); i++) //Extra Cutting.
+            int allValues = 0;
+            int allCounts = 0;
+
+            for (int i = 0; i < possiblePoints.size(); i++) //Extra Cutting.
             {
-                if(moveValues[possiblePoints.get(i).x][possiblePoints.get(i).y] < bestValue - cutDeferenceValue)
+                allValues += moveValues[possiblePoints.get(i).x][possiblePoints.get(i).y];
+                allCounts += simulationsCounts[possiblePoints.get(i).x][possiblePoints.get(i).y];
+            }
+
+            float avarageValue = allValues / (float)allCounts;
+
+            //if((GetRemainingTimeMS() < 0))
+            //Log.d("avarage value: ", "" + avarageValue);
+
+
+            for (int i = 0; i < possiblePoints.size(); i++) //Extra Cutting.
+            {
+                if(moveValues[possiblePoints.get(i).x][possiblePoints.get(i).y]/(float)simulationsCounts[possiblePoints.get(i).x][possiblePoints.get(i).y] < avarageValue - (0.3f - 0.3f * possiblePoints.size() / 81))
                 {
                     //moveValues.remove(i);
                     possiblePoints.remove(i);
                     i--;
                 }
-            }*/
+            }
+
+            //if((GetRemainingTimeMS() < 0))
+            //Log.d("moves count: ", "" + possiblePoints.size());
 
             //nie pamietam czy to jest potrzebne poza Extra Cutem. Chyba można wyjebac ale nie jestem pewien xd
             if(possibleSize > possiblePoints.size())
             {
                 possibleSize = possiblePoints.size();
 
-                cutDeferenceValue ++;
+                //cutDeferenceValue ++;
 
-                Log.d("cutDeferenceValue", cutDeferenceValue + "");
+                //Log.d("cutDeferenceValue", cutDeferenceValue + "");
             }
 
 
 
-            Log.d("Time Left", GetRemainingTimeMS() + "");
-            Log.d("Simulation", "best move: " + bestMove);
-        }
+            //Log.d("Time Left", GetRemainingTimeMS() + "");
+            //Log.d("Simulation", "best move: " + bestMove);
+        }while((GetRemainingTimeMS() >= 0));
 
 
         UpdateValuesMap(bestMove, ourColour);
 
         emptyPoints.remove(bestMove);
 
-        Log.d("Is This Move Fine? ", IsMoveValid(bestMove)? "Yes" : "No" );
+        ///Log.d("Is This Move Fine? ", IsMoveValid(bestMove)? "Yes" : "No" );
 
-        PrintCurrentMapStateToConsole(); //do usuniecia
+        /*PrintCurrentMapStateToConsole(); //do usuniecia
 
         try {
             TimeUnit.SECONDS.sleep(1);   //do usuniecia
         } catch (InterruptedException e) {
             e.printStackTrace();
-        }
+        }*/
         // Returns the best move found during specified time.
         return bestMove;
     }
@@ -199,6 +220,8 @@ public class AI_KosmaMarzec extends AbstractPlayerController
 
         // Create a new map for simulation.
         Field[][] mapSimulation = new Field[mapCopy.length][mapCopy[0].length];
+
+        //System.arraycopy( mapCopy, 0, mapSimulation, 0, mapCopy.length );
 
         // Fill new map for simulation.
         for(int i = 0; i < mapSimulation.length; i++)
@@ -240,8 +263,9 @@ public class AI_KosmaMarzec extends AbstractPlayerController
             //Sim end
             if(++countMoves > 5)
             {
-                RemoveUnmovable(gameSimulation, ourPossibleMoves, ourColour);
-                RemoveUnmovable(gameSimulation, enemyPossibleMoves, enemyColour);
+                //AgresiveAvreging
+                //RemoveUnmovable(gameSimulation, ourPossibleMoves, ourColour);
+                //RemoveUnmovable(gameSimulation, enemyPossibleMoves, enemyColour);
                 //Log.d("Time after sim", GetRemainingTimeMS() + "");
                 int currentMoveValue = ourPossibleMoves.size() - enemyPossibleMoves.size();
 
@@ -281,8 +305,10 @@ public class AI_KosmaMarzec extends AbstractPlayerController
     void UpdateMoveValue(Point move, int newMoveValue)
     {
         simulationsCounts[move.x][move.y] += 1;
-        moveValues[move.x][move.y] *= (simulationsCounts[move.x][move.y] - 1) / simulationsCounts[move.x][move.y];
-        moveValues[move.x][move.y] += newMoveValue * ( 1 / simulationsCounts[move.x][move.y]);
+        moveValues[move.x][move.y] += newMoveValue;
+
+        //moveValues[move.x][move.y] *= (simulationsCounts[move.x][move.y] - 1) / simulationsCounts[move.x][move.y];
+        //moveValues[move.x][move.y] += newMoveValue * ( 1 / simulationsCounts[move.x][move.y]);
     }
 
     Point SimulateSingleMove(Game gameSimulation, Random randomIndex, Field[][] mapSimulation, List<Point> possibleMoves, Field color)
@@ -382,9 +408,9 @@ public class AI_KosmaMarzec extends AbstractPlayerController
             }
         }
 
-        Log.d("Max Value", valueMax + "");
+        //Log.d("Max Value", valueMax + "");
 
-        Log.d("moves befor", possiblePoints.size() + "");
+        //Log.d("moves befor", possiblePoints.size() + "");
 
         //usunięcie ruchów o wartości mniejszej od maksymalnej o więcej niż parametr nieufności untrust
         for(int i = 0; i < possiblePoints.size(); i++)
@@ -396,7 +422,7 @@ public class AI_KosmaMarzec extends AbstractPlayerController
             }
         }
 
-        Log.d("moves after", possiblePoints.size() + "");
+        //Log.d("moves after", possiblePoints.size() + "");
     }
 
     void AddValueToValuesMapStraight(Point point, int value, int range)
