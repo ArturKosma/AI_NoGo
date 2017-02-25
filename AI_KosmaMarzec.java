@@ -90,7 +90,8 @@ public class AI_KosmaMarzec extends AbstractPlayerController
             }
         }
 
-        UpdateValuesMap(lastOpponentMove, enemyColour);
+        if(emptyPoints.size() < 81)
+            UpdateValuesMap(lastOpponentMove, enemyColour);
 
         // Best point container.
         Point bestMove = new Point(0, 0); // Default point.
@@ -105,10 +106,10 @@ public class AI_KosmaMarzec extends AbstractPlayerController
         } */
 
         // Best value buffer.
-        float bestValue = 0; // Default value.
+        float bestValue = -50; // Default value.
 
         if(emptyPoints.size() > 30) //valuation
-        CutPossibleMoves((int)(1.9f + (6 - 6 * (float)emptyPoints.size() / 81)));
+            CutPossibleMoves((int)(1.9f + (6 - 6 * (float)emptyPoints.size() / 81)));
 
         //Log.d("Time Left", GetRemainingTimeMS() + "");
 
@@ -117,6 +118,7 @@ public class AI_KosmaMarzec extends AbstractPlayerController
         int possibleSize = possiblePoints.size();
 
         Point currentMove = new Point(0,0);
+
 
         // While we still have time left.
         do
@@ -145,31 +147,32 @@ public class AI_KosmaMarzec extends AbstractPlayerController
             }
 
             //Extra cutting nie dziala odpowiednio po zmianie wartosci na usrednione wiec wypieprzamy narazie
-            int allValues = 0;
-            int allCounts = 0;
+            if(possiblePoints.size() > 10) {
 
-            for (int i = 0; i < possiblePoints.size(); i++) //Extra Cutting.
-            {
-                allValues += moveValues[possiblePoints.get(i).x][possiblePoints.get(i).y];
-                allCounts += simulationsCounts[possiblePoints.get(i).x][possiblePoints.get(i).y];
-            }
+                int allValues = 0;
+                int allCounts = 0;
 
-            float avarageValue = allValues / (float)allCounts;
-
-            //if((GetRemainingTimeMS() < 0))
-            //Log.d("avarage value: ", "" + avarageValue);
-
-
-            for (int i = 0; i < possiblePoints.size(); i++) //Extra Cutting.
-            {
-                if(moveValues[possiblePoints.get(i).x][possiblePoints.get(i).y]/(float)simulationsCounts[possiblePoints.get(i).x][possiblePoints.get(i).y] < avarageValue - (0.3f - 0.3f * possiblePoints.size() / 81))
+                for (int i = 0; i < possiblePoints.size(); i++) //Extra Cutting.
                 {
-                    //moveValues.remove(i);
-                    possiblePoints.remove(i);
-                    i--;
+                    allValues += moveValues[possiblePoints.get(i).x][possiblePoints.get(i).y];
+                    allCounts += simulationsCounts[possiblePoints.get(i).x][possiblePoints.get(i).y];
+                }
+
+                float avarageValue = allValues / (float) allCounts;
+
+                //if((GetRemainingTimeMS() < 0))
+                //Log.d("avarage value: ", "" + avarageValue);
+
+
+                for (int i = 0; i < possiblePoints.size(); i++) //Extra Cutting.
+                {
+                    if (simulationsCounts[possiblePoints.get(i).x][possiblePoints.get(i).y] > 0 && moveValues[possiblePoints.get(i).x][possiblePoints.get(i).y] / (float) simulationsCounts[possiblePoints.get(i).x][possiblePoints.get(i).y] < avarageValue - (0.3f - 0.3f * possiblePoints.size() / 81)) {
+                        //moveValues.remove(i);
+                        possiblePoints.remove(i);
+                        i--;
+                    }
                 }
             }
-
             //if((GetRemainingTimeMS() < 0))
             //Log.d("moves count: ", "" + possiblePoints.size());
 
@@ -194,15 +197,15 @@ public class AI_KosmaMarzec extends AbstractPlayerController
 
         emptyPoints.remove(bestMove);
 
-        ///Log.d("Is This Move Fine? ", IsMoveValid(bestMove)? "Yes" : "No" );
+        //Log.d("Is This Move Fine? ", IsMoveValid(bestMove)? "Yes" : "No" );
 
-        /*PrintCurrentMapStateToConsole(); //do usuniecia
+        //PrintCurrentMapStateToConsole(); //do usuniecia
 
-        try {
-            TimeUnit.SECONDS.sleep(1);   //do usuniecia
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }*/
+        //try {
+         //   TimeUnit.SECONDS.sleep(0);   //do usuniecia
+        //} catch (InterruptedException e) {
+        //    e.printStackTrace();
+        //}
         // Returns the best move found during specified time.
         return bestMove;
     }
@@ -250,7 +253,7 @@ public class AI_KosmaMarzec extends AbstractPlayerController
             ourPossibleMoves.add(move);
         }
 
-        Field currentPlayer = Field.BLACK;
+        //Field currentPlayer = Field.BLACK;
 
         int countMoves = 0;
 
@@ -290,7 +293,7 @@ public class AI_KosmaMarzec extends AbstractPlayerController
             {
                 Point chosenMove = SimulateSingleMove(gameSimulation, randomIndex, mapSimulation, ourPossibleMoves, ourColour);
 
-                if(chosenMove.x < 0)
+                if(chosenMove == new Point(0,0))
                     countMoves = 5;
                 else
                     chosenMoves.add(chosenMove);
@@ -313,6 +316,11 @@ public class AI_KosmaMarzec extends AbstractPlayerController
 
     Point SimulateSingleMove(Game gameSimulation, Random randomIndex, Field[][] mapSimulation, List<Point> possibleMoves, Field color)
     {
+        if (possibleMoves.size() == 0)
+        {
+            return new Point(0,0); //taa wiem ze messy ale tak jest najsensowniej
+        }
+
         // Search for a proper index.
         int properIndex = 0;
 
@@ -328,7 +336,7 @@ public class AI_KosmaMarzec extends AbstractPlayerController
                 // Enemy lose.
                 if (possibleMoves.size() == 0)
                 {
-                    return new Point(-1,-1); //taa wiem ze messy ale tak jest najsensowniej
+                    return new Point(0,0); //taa wiem ze messy ale tak jest najsensowniej
                 }
             }
 
